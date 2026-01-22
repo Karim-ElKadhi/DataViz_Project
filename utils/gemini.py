@@ -1,4 +1,4 @@
-import google.generativeai as genai
+from google import genai
 import json
 
 class GeminiService:
@@ -7,7 +7,6 @@ class GeminiService:
         self.model = genai.GenerativeModel('gemini-pro')
     
     def generate_visualization_proposals(self, question, dataset_info, columns):
-        """Generate 3 visualization proposals using Gemini"""
         
         prompt = f"""
 Tu es un expert en data visualisation. Analyse la question de l'utilisateur et propose 3 visualisations différentes et pertinentes.

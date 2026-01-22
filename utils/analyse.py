@@ -78,7 +78,6 @@ class DataAnalyzer:
         }
     
     def _prepare_bar(self, df, config):
-        """Prepare bar chart data"""
         x_axis = config.get('x_axis')
         y_axis = config.get('y_axis', 'price')
         aggregation = config.get('aggregation', 'mean')
@@ -104,7 +103,6 @@ class DataAnalyzer:
         }
     
     def _prepare_box(self, df, config):
-        """Prepare box plot data"""
         category = config.get('category')
         value = config.get('value', 'price')
         
@@ -129,7 +127,6 @@ class DataAnalyzer:
         }
     
     def _prepare_heatmap(self, df, config):
-        """Prepare correlation heatmap data"""
         numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
         corr_matrix = df[numeric_cols].corr()
         
@@ -148,6 +145,4 @@ class DataAnalyzer:
         }
     
     def _prepare_violin(self, df, config):
-        """Prepare violin plot data"""
-        # Similar to box plot but return all values for violin rendering
         return self._prepare_box(df, config)
