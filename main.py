@@ -19,7 +19,6 @@ current_dataset = None
 
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
-    """Upload and analyze CSV file"""
     global current_dataset
     
     if 'file' not in request.files:

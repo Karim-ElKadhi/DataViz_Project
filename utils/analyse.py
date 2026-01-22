@@ -5,38 +5,71 @@ class DataAnalyzer:
     def analyze_dataset(self, df):
         
         numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-        categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
+        categorical_cols = df.select_dtypes(include=['object', 'category', 'bool']).columns.tolist()
+        
+        for col in categorical_cols:
+            if df[col].dtype == 'bool':
+                df[col] = df[col].astype(str)
         
         analysis = {
             'statistics': {},
             'correlations': {},
-            'categorical_info': {}
+            'categorical_info': {},
+            'dataset_summary': {
+                'total_rows': len(df),
+                'total_columns': len(df.columns),
+                'numeric_columns': len(numeric_cols),
+                'categorical_columns': len(categorical_cols),
+                'missing_values': df.isnull().sum().to_dict()
+            }
         }
         
         # stats basiques
         for col in numeric_cols:
             analysis['statistics'][col] = {
-                'mean': float(df[col].mean()),
-                'median': float(df[col].median()),
-                'min': float(df[col].min()),
-                'max': float(df[col].max()),
-                'std': float(df[col].std())
+                'mean': float(df[col].mean()) if not df[col].isnull().all() else None,
+                'median': float(df[col].median()) if not df[col].isnull().all() else None,
+                'min': float(df[col].min()) if not df[col].isnull().all() else None,
+                'max': float(df[col].max()) if not df[col].isnull().all() else None,
+                'std': float(df[col].std()) if not df[col].isnull().all() else None
             }
         
         # Correlations 
-        if 'price' in numeric_cols:
-            correlations = df[numeric_cols].corr()['price'].to_dict()
-            analysis['correlations'] = {
-                k: float(v) for k, v in correlations.items() 
-                if k != 'price' and not np.isnan(v)
-            }
+        if len(numeric_cols) > 1:
+            corr_matrix = df[numeric_cols].corr()
+            correlations_list = []
+            for i in range(len(numeric_cols)):
+                for j in range(i+1, len(numeric_cols)):
+                    corr_value = corr_matrix.iloc[i, j]
+                    if not np.isnan(corr_value):
+                        correlations_list.append({
+                            'var1': numeric_cols[i],
+                            'var2': numeric_cols[j],
+                            'correlation': float(corr_value)
+                        })
+            # tri
+            correlations_list.sort(key=lambda x: abs(x['correlation']), reverse=True)
+            analysis['correlations'] = correlations_list[:10]  # Top 10 correlations
         
-        # Info catégorielle
+        # Infos catégorielles
         for col in categorical_cols:
-            analysis['categorical_info'][col] = {
-                'unique_values': df[col].unique().tolist(),
-                'value_counts': df[col].value_counts().to_dict()
-            }
+            unique_vals = df[col].dropna().unique()
+            value_counts = df[col].value_counts()
+            
+            # Limite aux 20 premières catégories pour éviter de surcharger Gemini
+            if len(unique_vals) > 20:
+                top_values = value_counts.head(20).to_dict()
+                analysis['categorical_info'][col] = {
+                    'unique_count': len(unique_vals),
+                    'top_20_values': {str(k): int(v) for k, v in top_values.items()},
+                    'note': f'Showing top 20 out of {len(unique_vals)} unique values'
+                }
+            else:
+                analysis['categorical_info'][col] = {
+                    'unique_count': len(unique_vals),
+                    'unique_values': [str(v) for v in unique_vals[:50]],  # Limit to 50
+                    'value_counts': {str(k): int(v) for k, v in value_counts.to_dict().items()}
+                }
         
         return analysis
     

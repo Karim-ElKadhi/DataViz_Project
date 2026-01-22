@@ -1,4 +1,4 @@
-from google import genai
+import google.generativeai as genai
 import json
 
 class GeminiService:
@@ -8,31 +8,54 @@ class GeminiService:
     
     def generate_visualization_proposals(self, question, dataset_info, columns):
         
+        # Identify numeric and categorical columns from dataset_info
+        numeric_cols = list(dataset_info.get('statistics', {}).keys())
+        categorical_cols = list(dataset_info.get('categorical_info', {}).keys())
+        
         prompt = f"""
 Tu es un expert en data visualisation. Analyse la question de l'utilisateur et propose 3 visualisations différentes et pertinentes.
 
 QUESTION DE L'UTILISATEUR:
 {question}
 
-INFORMATIONS SUR LE DATASET (House Pricing):
+INFORMATIONS SUR LE DATASET:
 Colonnes disponibles: {', '.join(columns)}
+Nombre total de colonnes: {len(columns)}
 
-Statistiques descriptives:
+Variables numériques ({len(numeric_cols)}): {', '.join(numeric_cols)}
+Variables catégorielles ({len(categorical_cols)}): {', '.join(categorical_cols)}
+
+Statistiques descriptives des variables numériques:
 {json.dumps(dataset_info.get('statistics', {}), indent=2)}
 
-Corrélations importantes:
+Corrélations entre variables numériques:
 {json.dumps(dataset_info.get('correlations', {}), indent=2)}
 
-Variables catégorielles: mainroad, guestroom, basement, hotwaterheating, airconditioning, prefarea, furnishingstatus
-Variables numériques: price, area, bedrooms, bathrooms, stories, parking
+Informations sur les variables catégorielles:
+{json.dumps(dataset_info.get('categorical_info', {}), indent=2)}
 
 INSTRUCTIONS:
-Propose exactement 3 visualisations différentes qui répondent à la question.
+Analyse attentivement le dataset et la question pour proposer exactement 3 visualisations différentes qui répondent précisément à la question posée.
+
+RÈGLES IMPORTANTES:
+1. Utilise UNIQUEMENT les colonnes qui existent dans le dataset
+2. Adapte le type de visualisation au type de données (numériques vs catégorielles)
+3. Les 3 visualisations doivent être COMPLÉMENTAIRES et apporter des perspectives différentes
+4. Priorise les variables les plus pertinentes pour répondre à la question
+
+Types de graphiques disponibles:
+- "scatter": Pour relations entre 2 variables numériques (peut inclure color_by pour une catégorie)
+- "bar": Pour comparer des moyennes/sommes par catégorie
+- "box": Pour voir la distribution d'une variable numérique par catégories
+- "heatmap": Pour matrice de corrélation entre variables numériques
+- "line": Pour évolution temporelle (si données temporelles disponibles)
+- "violin": Pour distribution détaillée par catégories
+
 Pour chaque visualisation, fournis:
-1. Un type de graphique (scatter, bar, box, heatmap, violin, line)
-2. Un titre descriptif
-3. Une justification claire (2-3 phrases) expliquant pourquoi cette visualisation répond à la question
-4. La configuration technique (axes, variables, groupements)
+1. Un type de graphique adapté aux données
+2. Un titre descriptif et précis
+3. Une justification claire (2-3 phrases) expliquant comment cette visualisation répond à la question
+4. La configuration technique avec les noms EXACTS des colonnes du dataset
 
 IMPORTANT: Réponds UNIQUEMENT avec un JSON valide, sans texte avant ou après, au format suivant:
 
@@ -76,8 +99,10 @@ IMPORTANT: Réponds UNIQUEMENT avec un JSON valide, sans texte avant ou après, 
 
 Assure-toi que:
 - Les 3 visualisations sont DIFFÉRENTES (types et variables différents)
-- Toutes les colonnes mentionnées existent dans le dataset
-- La réponse est un JSON valide et complet
+- Toutes les colonnes mentionnées existent EXACTEMENT dans le dataset (respecte la casse)
+- Les types de graphiques correspondent aux types de données (numériques/catégorielles)
+- Chaque visualisation apporte une réponse complémentaire à la question
+- La réponse est un JSON valide et complet sans texte supplémentaire
 """
         
         try:
@@ -109,38 +134,35 @@ Assure-toi que:
             return self._get_default_proposals()
     
     def _get_default_proposals(self):
-        """Fallback default proposals"""
+        """Fallback generic proposals based on data types"""
         return [
             {
                 "id": 1,
                 "type": "scatter",
-                "title": "Relation entre surface et prix",
-                "justification": "Un nuage de points permet d'identifier la corrélation directe entre la surface du logement et son prix, tout en visualisant la dispersion des données.",
+                "title": "Relation entre deux variables principales",
+                "justification": "Un nuage de points permet d'identifier les corrélations et patterns entre les principales variables du dataset.",
                 "config": {
-                    "x_axis": "area",
-                    "y_axis": "price",
-                    "color_by": "furnishingstatus"
+                    "x_axis": "auto",
+                    "y_axis": "auto",
+                    "color_by": None
                 }
             },
             {
                 "id": 2,
                 "type": "bar",
-                "title": "Prix moyen selon le nombre de chambres",
-                "justification": "Un diagramme en barres compare efficacement les prix moyens pour différents nombres de chambres, révélant l'impact de cette variable sur le prix.",
+                "title": "Comparaison par catégories",
+                "justification": "Un diagramme en barres compare efficacement les valeurs moyennes entre différentes catégories du dataset.",
                 "config": {
-                    "x_axis": "bedrooms",
-                    "y_axis": "price",
+                    "x_axis": "auto",
+                    "y_axis": "auto",
                     "aggregation": "mean"
                 }
             },
             {
                 "id": 3,
-                "type": "box",
-                "title": "Distribution des prix par statut de meublage",
-                "justification": "Les boîtes à moustaches montrent la distribution complète des prix selon le statut de meublage, incluant médiane, quartiles et valeurs extrêmes.",
-                "config": {
-                    "category": "furnishingstatus",
-                    "value": "price"
-                }
+                "type": "heatmap",
+                "title": "Matrice de corrélation complète",
+                "justification": "Une heatmap révèle toutes les corrélations entre variables numériques, offrant une vue d'ensemble des relations dans les données.",
+                "config": {}
             }
         ]
