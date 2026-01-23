@@ -4,7 +4,7 @@ import json
 class GeminiService:
     def __init__(self, api_key):
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-pro')
+        self.model = genai.GenerativeModel('gemini-2.5-pro')
     
     def generate_visualization_proposals(self, question, dataset_info, columns):
         
@@ -45,9 +45,12 @@ RÈGLES IMPORTANTES:
 
 Types de graphiques disponibles:
 - "scatter": Pour relations entre 2 variables numériques (peut inclure color_by pour une catégorie)
-- "bar": Pour comparer des moyennes/sommes par catégorie
+- "bar": Pour comparer des moyennes/sommes par catégorie (vertical)
+- "horizontalBar": Pour comparer des moyennes/sommes par catégorie (horizontal)
+- "pie": Pour montrer la répartition en pourcentage de catégories
 - "box": Pour voir la distribution d'une variable numérique par catégories
-- "heatmap": Pour matrice de corrélation entre variables numériques
+- "correlationMatrix": Pour matrice de corrélation complète entre variables numériques
+- "heatmap": Pour visualiser une matrice de valeurs avec couleurs
 - "line": Pour évolution temporelle (si données temporelles disponibles)
 - "violin": Pour distribution détaillée par catégories
 
@@ -80,22 +83,53 @@ IMPORTANT: Réponds UNIQUEMENT avec un JSON valide, sans texte avant ou après, 
       "justification": "Autre explication...",
       "config": {{
         "x_axis": "nom_colonne",
-        "y_axis": "price",
+        "y_axis": "nom_colonne_numerique",
         "aggregation": "mean"
       }}
+      // OU pour compter les occurrences:
+      // "config": {{"x_axis": "nom_colonne", "aggregation": "count"}}
     }},
     {{
       "id": 3,
-      "type": "box",
+      "type": "pie",
       "title": "Troisième titre",
       "justification": "Troisième explication...",
       "config": {{
-        "category": "nom_colonne",
-        "value": "price"
+        "category": "nom_colonne"
       }}
+      // OU pour sommer une valeur:
+      // "config": {{"category": "nom_colonne", "value": "nom_colonne_numerique", "aggregation": "sum"}}
     }}
   ]
 }}
+
+EXEMPLES DE CONFIGURATIONS SELON LE TYPE:
+
+1. Bar Chart pour COMPTER les occurrences:
+   {{"type": "bar", "config": {{"x_axis": "bathrooms", "aggregation": "count"}}}}
+
+2. Bar Chart pour MOYENNES:
+   {{"type": "bar", "config": {{"x_axis": "bedrooms", "y_axis": "price", "aggregation": "mean"}}}}
+
+3. Pie Chart pour RÉPARTITION:
+   {{"type": "pie", "config": {{"category": "furnishingstatus"}}}}
+
+4. Horizontal Bar pour COMPARAISON:
+   {{"type": "horizontalBar", "config": {{"x_axis": "region", "y_axis": "sales", "aggregation": "sum"}}}}
+
+5. Box Plot pour DISTRIBUTION:
+   {{"type": "box", "config": {{"category": "bedrooms", "value": "price"}}}}
+
+6. Correlation Matrix (pas de config nécessaire):
+   {{"type": "correlationMatrix", "config": {{}}}}
+
+RÈGLES IMPORTANTES:
+- Pour BAR CHART avec comptage: SEULEMENT "x_axis" et "aggregation": "count"
+- Pour BAR CHART avec agrégation: "x_axis" ET "y_axis" ET "aggregation"
+- Pour PIE CHART comptage: SEULEMENT "category"
+- Pour PIE CHART avec valeur: "category" ET "value" ET "aggregation"
+- Pour SCATTER: TOUJOURS "x_axis" ET "y_axis" (colonnes numériques)
+- Pour BOX: TOUJOURS "category" ET "value"
 
 Assure-toi que:
 - Les 3 visualisations sont DIFFÉRENTES (types et variables différents)
@@ -104,10 +138,17 @@ Assure-toi que:
 - Chaque visualisation apporte une réponse complémentaire à la question
 - La réponse est un JSON valide et complet sans texte supplémentaire
 """
-        
         try:
             response = self.model.generate_content(prompt)
             response_text = response.text.strip()
+            
+            # STORE RAW RESPONSE FOR DEBUGGING
+            self.last_raw_response = response_text
+            print("=" * 80)
+            print("RAW GEMINI RESPONSE:")
+            print("=" * 80)
+            print(response_text)
+            print("=" * 80)
             
             # Remove markdown code blocks if present
             if response_text.startswith('```'):
@@ -132,6 +173,10 @@ Assure-toi que:
         except Exception as e:
             print(f"Error generating proposals: {e}")
             return self._get_default_proposals()
+    
+    def get_last_raw_response(self):
+        """Return the last raw response from Gemini"""
+        return self.last_raw_response
     
     def _get_default_proposals(self):
         """Fallback generic proposals based on data types"""

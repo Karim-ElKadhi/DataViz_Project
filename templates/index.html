@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualisation Intelligente de Données</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>📊 Visualisation Intelligente de Données</h1>
+            <p class="subtitle">Analysez n'importe quel dataset avec l'IA</p>
+        </header>
+
+        <!-- Error Display -->
+        <div id="errorMessage" class="error-message hidden"></div>
+
+        <!-- Step 1: Upload -->
+        <section id="uploadSection" class="section">
+            <div class="upload-box">
+                <div class="upload-icon">📁</div>
+                <h2>Téléchargez votre fichier CSV</h2>
+                <input type="file" id="fileInput" accept=".csv" class="file-input">
+                <label for="fileInput" class="upload-button">
+                    Choisir un fichier
+                </label>
+                <p class="upload-info" id="uploadInfo">Aucun fichier sélectionné</p>
+                <div id="uploadProgress" class="hidden">
+                    <div class="loader"></div>
+                    <p>Chargement en cours...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Step 2: Question -->
+        <section id="questionSection" class="section hidden">
+            <div class="success-message">
+                <span class="icon">✓</span>
+                <span id="datasetInfo">Dataset chargé avec succès!</span>
+            </div>
+            
+            <div class="question-box">
+                <h2>Posez votre question sur les données</h2>
+                <textarea 
+                    id="questionInput" 
+                    placeholder="Ex: Quels sont les facteurs les plus corrélés? Comment cette variable influence-t-elle les résultats?"
+                    rows="4"
+                ></textarea>
+                <button id="generateBtn" class="primary-button">
+                    <span class="icon">🚀</span>
+                    Générer les visualisations
+                </button>
+                <div id="generateProgress" class="hidden">
+                    <div class="loader"></div>
+                    <p>Génération en cours avec Gemini AI...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Step 3: Proposals -->
+        <section id="proposalsSection" class="section hidden">
+            <h2>Choisissez une visualisation</h2>
+            <div id="proposalsList" class="proposals-grid"></div>
+        </section>
+
+        <!-- Step 4: Visualization -->
+        <section id="visualizationSection" class="section hidden">
+            <div class="viz-header">
+                <h2 id="vizTitle">Visualisation</h2>
+                <button id="downloadBtn" class="download-button">
+                    <span class="icon">⬇</span>
+                    Télécharger PNG
+                </button>
+            </div>
+            <div id="rawResponseSection" style="display: none; margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3 style="margin: 0;">🔍 Raw Gemini Response (Debug)</h3>
+        <button onclick="toggleRawResponse()" style="padding: 5px 15px; background: #333; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            Hide
+        </button>
+    </div>
+    <pre id="rawResponseContent" style="background: white; padding: 15px; border-radius: 4px; overflow-x: auto; max-height: 400px; overflow-y: auto; font-size: 12px; line-height: 1.4;"></pre>
+</div>
+            
+            <div id="vizJustification" class="justification-box"></div>
+            
+            <div class="chart-container">
+                <canvas id="chartCanvas"></canvas>
+            </div>
+            
+            <button id="newQuestionBtn" class="secondary-button">
+                Nouvelle question
+            </button>
+        </section>
+        
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
