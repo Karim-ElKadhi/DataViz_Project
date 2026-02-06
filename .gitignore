@@ -2,5 +2,5 @@ project/
 *.env
 __pycache__/
 *.pyc
-
+*test
 test.py/
