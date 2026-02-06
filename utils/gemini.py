@@ -1,11 +1,14 @@
 import google.generativeai as genai
 import json
-
+import re
+import requests
 class GeminiService:
-    def __init__(self, api_key):
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-2.5-pro')
-    
+    def __init__(self, api_key, model="openai/gpt-oss-120b"):
+        self.api_key = api_key
+        self.model = model
+        self.endpoint = "https://api.groq.com/openai/v1/chat/completions"
+        self.last_raw_response = None
+
     def generate_visualization_proposals(self, question, dataset_info, columns):
         
         # Identify numeric and categorical columns from dataset_info
@@ -37,11 +40,56 @@ Informations sur les variables catégorielles:
 INSTRUCTIONS:
 Analyse attentivement le dataset et la question pour proposer exactement 3 visualisations différentes qui répondent précisément à la question posée.
 
+BONNES PRATIQUES DE VISUALISATION (OBLIGATOIRES):
+
+1. PRINCIPE DE DATA-INK RATIO:
+   - Maximiser le ratio data-ink: chaque élément visuel doit représenter des données
+   - Minimiser le chartjunk: éviter les décorations inutiles
+   - Supprimer tout élément redondant ou non informatif
+
+2. CLARTÉ ET LISIBILITÉ:
+   - Titres clairs et descriptifs
+   - Axes toujours étiquetés avec unités si applicable
+   - Légendes uniquement si nécessaire (pas de légende pour un seul dataset)
+   - Police lisible, pas de texte trop petit
+
+3. CHOIX DU TYPE DE GRAPHIQUE:
+   - Bar chart: Comparaisons entre catégories (max 15 catégories)
+   - Line chart: Évolutions temporelles ou séquentielles
+   - Scatter plot: Relations entre 2 variables continues
+   - Pie chart: Proportions d'un tout (max 5-7 catégories, éviter si possible)
+   - Box plot: Distribution et comparaison de distributions
+   - Correlation matrix: Relations multiples entre variables numériques
+   
+   ÉVITER:
+   - Pie charts si > 7 catégories ou si bar chart plus clair
+   - Graphiques trop chargés
+   - Double axes Y
+
+4. COULEURS:
+   - Palette cohérente et accessible
+   - Éviter trop de couleurs (max 5-7 couleurs distinctes)
+   - Couleurs significatives (rouge pour négatif, vert pour positif si applicable)
+
+5. ÉCHELLES:
+   - Échelle Y commence à 0 pour bar charts (obligatoire)
+   - Échelles appropriées pour line/scatter (peut ne pas commencer à 0)
+   - Éviter les échelles tronquées qui exagèrent les différences
+   - Pas d'échelles logarithmiques sauf si justifié
+
+6. ORDRE ET ORGANISATION:
+   - Catégories ordonnées de manière logique (alphabétique, par valeur, chronologique)
+   - Pour bar charts: trier par valeur décroissante si pas d'ordre naturel
+   - Grouper les éléments liés ensemble
+
 RÈGLES IMPORTANTES:
 1. Utilise UNIQUEMENT les colonnes qui existent dans le dataset
 2. Adapte le type de visualisation au type de données (numériques vs catégorielles)
 3. Les 3 visualisations doivent être COMPLÉMENTAIRES et apporter des perspectives différentes
 4. Priorise les variables les plus pertinentes pour répondre à la question
+5. JUSTIFIE chaque choix en expliquant pourquoi cette visualisation respecte les bonnes pratiques
+NOTE: Si la question contient "répartition", privilégier un comptage (aggregation: "count") par variable catégorielle ou discrète.
+
 
 Types de graphiques disponibles:
 - "scatter": Pour relations entre 2 variables numériques (peut inclure color_by pour une catégorie)
@@ -66,39 +114,39 @@ IMPORTANT: Réponds UNIQUEMENT avec un JSON valide, sans texte avant ou après, 
   "propositions": [
     {{
       "id": 1,
-      "type": "scatter",
-      "title": "Titre de la visualisation",
-      "justification": "Explication de pourquoi cette visualisation est pertinente...",
+      "type": "bar",
+      "title": "Titre clair et descriptif",
+      "justification": "Ce bar chart est optimal car: (1) il compare des catégories discrètes, (2) l'échelle Y part de 0 pour éviter les distorsions, (3) les barres sont ordonnées par valeur pour faciliter la lecture, (4) le ratio data-ink est maximisé en évitant les décorations inutiles.",
       "config": {{
         "x_axis": "nom_colonne",
-        "y_axis": "nom_colonne",
-        "color_by": "nom_colonne_optionnel",
-        "size_by": "nom_colonne_optionnel"
+        "y_axis": "nom_colonne_numerique",
+        "aggregation": "mean",
+        "sort_by": "value",
+        "max_categories": 12
       }}
     }},
     {{
       "id": 2,
-      "type": "bar",
-      "title": "Autre titre",
-      "justification": "Autre explication...",
+      "type": "scatter",
+      "title": "Autre titre descriptif",
+      "justification": "Le scatter plot est approprié pour: (1) visualiser la corrélation entre deux variables continues, (2) identifier des patterns ou outliers, (3) chaque point représente une observation réelle maximisant le data-ink ratio.",
       "config": {{
-        "x_axis": "nom_colonne",
+        "x_axis": "nom_colonne_numerique",
         "y_axis": "nom_colonne_numerique",
-        "aggregation": "mean"
+        "color_by": null
       }}
-      // OU pour compter les occurrences:
-      // "config": {{"x_axis": "nom_colonne", "aggregation": "count"}}
     }},
     {{
       "id": 3,
-      "type": "pie",
+      "type": "horizontalBar",
       "title": "Troisième titre",
-      "justification": "Troisième explication...",
+      "justification": "Le bar chart horizontal est préférable car: (1) les noms de catégories sont longs et plus lisibles horizontalement, (2) facilite la comparaison entre catégories, (3) l'ordre décroissant met en évidence le classement.",
       "config": {{
-        "category": "nom_colonne"
+        "x_axis": "nom_colonne_categorielle",
+        "y_axis": "nom_colonne_numerique",
+        "aggregation": "sum",
+        "sort_by": "value"
       }}
-      // OU pour sommer une valeur:
-      // "config": {{"category": "nom_colonne", "value": "nom_colonne_numerique", "aggregation": "sum"}}
     }}
   ]
 }}
@@ -138,76 +186,77 @@ Assure-toi que:
 - Chaque visualisation apporte une réponse complémentaire à la question
 - La réponse est un JSON valide et complet sans texte supplémentaire
 """
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": "Tu es un assistant expert en data visualisation."},
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": 0.2,
+        }
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+
         try:
-            response = self.model.generate_content(prompt)
-            response_text = response.text.strip()
-            
-            # STORE RAW RESPONSE FOR DEBUGGING
+            response = requests.post(self.endpoint, headers=headers, json=payload, timeout=60)
+            response.raise_for_status()
+
+            data = response.json()
+
+            response_text = data["choices"][0]["message"]["content"].strip()
+
             self.last_raw_response = response_text
+
             print("=" * 80)
-            print("RAW GEMINI RESPONSE:")
+            print("RAW GROQ RESPONSE")
             print("=" * 80)
             print(response_text)
             print("=" * 80)
-            
-            # Remove markdown code blocks if present
-            if response_text.startswith('```'):
-                response_text = response_text.split('```')[1]
-                if response_text.startswith('json'):
-                    response_text = response_text[4:]
-            
-            # Parse JSON
-            proposals = json.loads(response_text)
-            
-            # Validate structure
-            if 'propositions' not in proposals:
-                raise ValueError("Invalid response structure")
-            
-            return proposals['propositions']
-        
-        except json.JSONDecodeError as e:
-            print(f"JSON parsing error: {e}")
-            print(f"Response text: {response_text}")
-            # Return default proposals as fallback
-            return self._get_default_proposals()
+
+            # Robust JSON extraction
+            match = re.search(r"\{[\s\S]*\}", response_text)
+            if not match:
+                raise ValueError("No JSON found in response")
+
+            json_str = match.group(0)
+            proposals = json.loads(json_str)
+
+            if "propositions" not in proposals:
+                raise ValueError("Missing 'propositions'")
+
+            return proposals["propositions"]
+
         except Exception as e:
-            print(f"Error generating proposals: {e}")
+            print("Groq error:", e)
             return self._get_default_proposals()
-    
+
     def get_last_raw_response(self):
-        """Return the last raw response from Gemini"""
         return self.last_raw_response
-    
+
     def _get_default_proposals(self):
-        """Fallback generic proposals based on data types"""
         return [
             {
                 "id": 1,
                 "type": "scatter",
                 "title": "Relation entre deux variables principales",
-                "justification": "Un nuage de points permet d'identifier les corrélations et patterns entre les principales variables du dataset.",
-                "config": {
-                    "x_axis": "auto",
-                    "y_axis": "auto",
-                    "color_by": None
-                }
+                "justification": "false",
+                "config": {"x_axis": "auto", "y_axis": "auto"}
             },
             {
                 "id": 2,
                 "type": "bar",
                 "title": "Comparaison par catégories",
-                "justification": "Un diagramme en barres compare efficacement les valeurs moyennes entre différentes catégories du dataset.",
-                "config": {
-                    "x_axis": "auto",
-                    "y_axis": "auto",
-                    "aggregation": "mean"
-                }
+                "justification": "false",
+                "config": {"aggregation": "mean"}
             },
             {
                 "id": 3,
                 "type": "heatmap",
-                "title": "Matrice de corrélation complète",
-                "justification": "Une heatmap révèle toutes les corrélations entre variables numériques, offrant une vue d'ensemble des relations dans les données.",
+                "title": "Matrice de corrélation",
+                "justification": "false",
                 "config": {}
             }
         ]
