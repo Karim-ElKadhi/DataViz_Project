@@ -24,7 +24,7 @@ class DataAnalyzer:
             }
         }
         
-        # stats basiques
+        # Basic statistics for numeric columns
         for col in numeric_cols:
             analysis['statistics'][col] = {
                 'mean': float(df[col].mean()) if not df[col].isnull().all() else None,
@@ -34,8 +34,6 @@ class DataAnalyzer:
                 'std': float(df[col].std()) if not df[col].isnull().all() else None
             }
         
-        # Correlations 
-        # Correlations between all numeric columns
         if len(numeric_cols) > 1:
             corr_matrix = df[numeric_cols].corr()
             # Get top correlations
@@ -49,16 +47,13 @@ class DataAnalyzer:
                             'var2': numeric_cols[j],
                             'correlation': float(corr_value)
                         })
-            # Sort by absolute correlation value
             correlations_list.sort(key=lambda x: abs(x['correlation']), reverse=True)
-            analysis['correlations'] = correlations_list[:10]  # Top 10 correlations
+            analysis['correlations'] = correlations_list[:10] 
         
-        # Categorical info with limits
         for col in categorical_cols:
             unique_vals = df[col].dropna().unique()
             value_counts = df[col].value_counts()
             
-            # Limit to top 20 categories to avoid overwhelming Gemini
             if len(unique_vals) > 20:
                 top_values = value_counts.head(20).to_dict()
                 analysis['categorical_info'][col] = {
@@ -76,7 +71,6 @@ class DataAnalyzer:
         return analysis
     
     def prepare_visualization_data(self, df, viz_type, config):
-        """Prepare data for specific visualization type"""
         
         if viz_type == 'scatter':
             return self._prepare_scatter(df, config)
@@ -100,7 +94,6 @@ class DataAnalyzer:
             return {'error': f'Unknown visualization type: {viz_type}'}
     
     def _prepare_scatter(self, df, config):
-        """Prepare scatter plot data"""
         x_axis = config.get('x_axis')
         y_axis = config.get('y_axis')
         color_by = config.get('color_by')
@@ -123,34 +116,59 @@ class DataAnalyzer:
         }
     
     def _prepare_bar(self, df, config):
-        """Prepare bar chart data"""
+        """Prepare bar chart data with best practices"""
         x_axis = config.get('x_axis')
         y_axis = config.get('y_axis')
-        aggregation = config.get('aggregation', 'count')  # Default to count
+        aggregation = config.get('aggregation', 'count')
+        sort_by = config.get('sort_by', 'value')  
+        limit = config.get('limit', None)  
+        order = config.get('order', 'desc') 
+        max_categories = config.get('max_categories', 15)  
+        
+        # Use limit if specified, otherwise use max_categories
+        if limit:
+            max_categories = limit
         
         # Validation x_axis
         if not x_axis or x_axis not in df.columns:
             return {'error': f'Column {x_axis} not found in dataset'}
         
-        # If no y_axis specified, use count aggregation
+        # If no y_axis specified
         if not y_axis or y_axis not in df.columns:
             if aggregation == 'count' or not y_axis:
-                # Count mode - just count occurrences
+                # Count 
                 try:
                     df_clean = df[x_axis].dropna()
                     if len(df_clean) == 0:
                         return {'error': 'No valid data after removing NaN values'}
                     
                     grouped = df_clean.value_counts()
+                    
+                    # Apply limit
+                    if len(grouped) > max_categories:
+                        if order == 'asc':
+                            grouped = grouped.nsmallest(max_categories)
+                        else:
+                            grouped = grouped.nlargest(max_categories)
+                    
                     data = [
                         {'category': str(cat), 'value': int(val)}
                         for cat, val in grouped.items()
                     ]
                     
+                    # Sort data
+                    if sort_by == 'value':
+                        reverse = (order == 'desc')
+                        data = sorted(data, key=lambda x: x['value'], reverse=reverse)
+                    elif sort_by == 'category':
+                        data = sorted(data, key=lambda x: x['category'])
+                    
                     return {
-                        'data': sorted(data, key=lambda x: x['category']),
+                        'data': data,
                         'x_label': x_axis,
-                        'y_label': 'Count'
+                        'y_label': 'Count',
+                        'limited': len(grouped) == max_categories,
+                        'limit_applied': limit if limit else max_categories if len(grouped) > max_categories else None
                     }
                 except Exception as e:
                     return {'error': f'Error preparing bar chart: {str(e)}'}
@@ -163,59 +181,81 @@ class DataAnalyzer:
                     return {'error': 'No numeric column found for aggregation'}
         
         try:
-            # Drop NaN values before grouping
+            # Drop NaN values 
             df_clean = df[[x_axis, y_axis]].dropna()
             
             if len(df_clean) == 0:
                 return {'error': 'No valid data after removing NaN values'}
             
+            # Aggregate
             if aggregation == 'mean':
                 grouped = df_clean.groupby(x_axis)[y_axis].mean()
             elif aggregation == 'sum':
                 grouped = df_clean.groupby(x_axis)[y_axis].sum()
             elif aggregation == 'count':
                 grouped = df_clean.groupby(x_axis)[y_axis].count()
+            elif aggregation == 'min':
+                grouped = df_clean.groupby(x_axis)[y_axis].min()
+            elif aggregation == 'max':
+                grouped = df_clean.groupby(x_axis)[y_axis].max()
             else:
                 grouped = df_clean.groupby(x_axis)[y_axis].mean()
+            
+            # Apply limit 
+            if len(grouped) > max_categories:
+                if order == 'asc':
+                    # For "worst", "bottom", "lowest"
+                    grouped = grouped.nsmallest(max_categories)
+                else:
+                    # For "top", "best", "highest" (default)
+                    grouped = grouped.nlargest(max_categories)
             
             data = [
                 {'category': str(cat), 'value': float(val)}
                 for cat, val in grouped.items()
             ]
             
+            # Sort
+            if sort_by == 'value':
+                reverse = (order == 'desc')
+                data = sorted(data, key=lambda x: x['value'], reverse=reverse)
+            elif sort_by == 'category':
+                data = sorted(data, key=lambda x: x['category'])
+            
             return {
-                'data': sorted(data, key=lambda x: x['category']),
+                'data': data,
                 'x_label': x_axis,
-                'y_label': f'{aggregation.capitalize()} of {y_axis}'
+                'y_label': f'{aggregation.capitalize()} of {y_axis}',
+                'limited': len(grouped) == max_categories,
+                'limit_applied': limit if limit else max_categories if len(grouped) > max_categories else None
             }
         except Exception as e:
             return {'error': f'Error preparing bar chart: {str(e)}'}
     
     def _prepare_horizontal_bar(self, df, config):
-        """Prepare horizontal bar chart data"""
-        # Same as bar but return flag for horizontal rendering
         result = self._prepare_bar(df, config)
         if 'error' not in result:
             result['horizontal'] = True
         return result
     
     def _prepare_pie(self, df, config):
-        """Prepare pie chart data"""
         category = config.get('category')
         value = config.get('value', None)
         aggregation = config.get('aggregation', 'count')
+        limit = config.get('limit', 10)  
+        sort_by = config.get('sort_by', 'value')
+        order = config.get('order', 'desc')
         
         # Validation
         if not category or category not in df.columns:
             return {'error': f'Column {category} not found in dataset'}
         
         try:
-            # If no value specified or aggregation is count, just count occurrences
             if not value or aggregation == 'count':
-                # Count occurrences
+                # Count 
                 grouped = df[category].value_counts()
             elif value in df.columns:
-                # Aggregate a specific value column
+                # Aggregation
                 df_clean = df[[category, value]].dropna()
                 
                 if len(df_clean) == 0:
@@ -230,33 +270,42 @@ class DataAnalyzer:
             else:
                 return {'error': f'Column {value} not found in dataset'}
             
+            # Apply limit 
+            if len(grouped) > limit:
+                if order == 'asc':
+                    grouped = grouped.nsmallest(limit)
+                else:
+                    grouped = grouped.nlargest(limit)
+            
             data = [
                 {'label': str(cat), 'value': float(val)}
                 for cat, val in grouped.items()
             ]
             
-            # Limit to top 10 for readability
-            data = sorted(data, key=lambda x: x['value'], reverse=True)[:10]
+            # Sort if needed
+            if sort_by == 'value':
+                reverse = (order == 'desc')
+                data = sorted(data, key=lambda x: x['value'], reverse=reverse)
+            elif sort_by == 'category':
+                data = sorted(data, key=lambda x: x['label'])
             
             return {
                 'data': data,
                 'category_label': category,
-                'value_label': value if value else 'Count'
+                'value_label': value if value else 'Count',
+                'limit_applied': limit if len(grouped) == limit else None
             }
         except Exception as e:
             return {'error': f'Error preparing pie chart: {str(e)}'}
     
     def _prepare_box(self, df, config):
-        """Prepare box plot data"""
         category = config.get('category')
         value = config.get('value')
         
-        # Validation
         if not category or category not in df.columns:
             return {'error': f'Column {category} not found'}
         
         if not value or value not in df.columns:
-            # Try to find first numeric column
             numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
             if numeric_cols:
                 value = numeric_cols[0]
@@ -293,14 +342,12 @@ class DataAnalyzer:
             return {'error': f'Error preparing box plot: {str(e)}'}
     
     def _prepare_heatmap(self, df, config):
-        """Prepare correlation heatmap data"""
         numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
         
-        # Limit to specified columns or top correlations
         if 'columns' in config and config['columns']:
             cols_to_use = [c for c in config['columns'] if c in numeric_cols]
         else:
-            cols_to_use = numeric_cols[:10]  # Limit to 10 for readability
+            cols_to_use = numeric_cols[:10] 
         
         if len(cols_to_use) < 2:
             return {'error': 'Need at least 2 numeric columns for heatmap'}
@@ -324,18 +371,15 @@ class DataAnalyzer:
         }
     
     def _prepare_correlation_matrix(self, df, config):
-        """Prepare full correlation matrix"""
         numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
         
         if len(numeric_cols) < 2:
             return {'error': 'Need at least 2 numeric columns for correlation matrix'}
         
-        # Limit to 12 columns max for readability
         cols_to_use = numeric_cols[:12]
         
         corr_matrix = df[cols_to_use].corr()
         
-        # Convert to format suitable for heatmap
         data = []
         for i, row_name in enumerate(corr_matrix.index):
             row_data = []
@@ -358,11 +402,9 @@ class DataAnalyzer:
         }
     
     def _prepare_line(self, df, config):
-        """Prepare line chart data"""
         x_axis = config.get('x_axis')
         y_axis = config.get('y_axis')
         
-        # Sort by x_axis for proper line chart
         df_sorted = df.sort_values(by=x_axis)
         
         data = []
@@ -380,6 +422,4 @@ class DataAnalyzer:
         }
     
     def _prepare_violin(self, df, config):
-        """Prepare violin plot data"""
-        # Similar to box plot but return all values for violin rendering
         return self._prepare_box(df, config)

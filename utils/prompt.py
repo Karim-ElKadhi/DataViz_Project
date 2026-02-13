@@ -57,14 +57,10 @@ BONNES PRATIQUES DE VISUALISATION (OBLIGATOIRES):
    - Bar chart: Comparaisons entre catégories (max 15 catégories)
    - Line chart: Évolutions temporelles ou séquentielles
    - Scatter plot: Relations entre 2 variables continues
-   - Pie chart: Proportions d'un tout (max 5-7 catégories, éviter si possible)
+   - Pie chart: Proportions d'un tout (max 5-7 catégories)
    - Box plot: Distribution et comparaison de distributions
    - Correlation matrix: Relations multiples entre variables numériques
-   
-   ÉVITER:
-   - Pie charts si > 7 catégories ou si bar chart plus clair
-   - Graphiques trop chargés
-   - Double axes Y
+  
 
 4. COULEURS:
    - Palette cohérente et accessible
@@ -84,18 +80,23 @@ BONNES PRATIQUES DE VISUALISATION (OBLIGATOIRES):
 
 RÈGLES IMPORTANTES:
 1. Utilise UNIQUEMENT les colonnes qui existent dans le dataset
-2. Adapte le type de visualisation au type de données (numériques vs catégorielles)
-3. Les 3 visualisations doivent être COMPLÉMENTAIRES et apporter des perspectives différentes
-4. Priorise les variables les plus pertinentes pour répondre à la question
-5. JUSTIFIE chaque choix en expliquant pourquoi cette visualisation respecte les bonnes pratiques
-NOTE: Si la question contient "répartition", privilégier un comptage (aggregation: "count") par variable catégorielle ou discrète.
+2. Si une visualisation pertinente nécessite une colonne absente, ne pas la proposer.
+Ne jamais inventer ou modifier le nom d'une colonne.
+3. Adapte le type de visualisation au type de données (numériques vs catégorielles)
+4. Les 3 visualisations doivent apporter des perspectives différentes
+5. Priorise les variables les plus pertinentes pour répondre à la question
+6. JUSTIFIE chaque choix en expliquant pourquoi cette visualisation respecte les bonnes pratiques
+NOTE: Si la question contient "répartition" ou "proportion", privilégier un comptage (aggregation: "count") par variable catégorielle ou discrète avec un pie plot ( ou en secteur).
 
+ÉVITER:
+   - Graphiques trop chargés
+   - Double axes Y
 
 Types de graphiques disponibles:
 - "scatter": Pour relations entre 2 variables numériques (peut inclure color_by pour une catégorie)
 - "bar": Pour comparer des moyennes/sommes par catégorie (vertical)
 - "horizontalBar": Pour comparer des moyennes/sommes par catégorie (horizontal)
-- "pie": Pour montrer la répartition en pourcentage de catégories
+- "pie": Pour montrer la répartition ou proportion pourcentage de catégories
 - "box": Pour voir la distribution d'une variable numérique par catégories
 - "correlationMatrix": Pour matrice de corrélation complète entre variables numériques
 - "heatmap": Pour visualiser une matrice de valeurs avec couleurs
@@ -109,14 +110,14 @@ Pour chaque visualisation, fournis:
 4. La configuration technique avec les noms EXACTS des colonnes du dataset
 
 IMPORTANT: Réponds UNIQUEMENT avec un JSON valide, sans texte avant ou après, au format suivant:
-
+ces propositions sont seulement des exemples:
 {{
   "propositions": [
     {{
       "id": 1,
-      "type": "bar",
+      "type": "",
       "title": "Titre clair et descriptif",
-      "justification": "Ce bar chart est optimal car: (1) il compare des catégories discrètes, (2) l'échelle Y part de 0 pour éviter les distorsions, (3) les barres sont ordonnées par valeur pour faciliter la lecture, (4) le ratio data-ink est maximisé en évitant les décorations inutiles.",
+      "justification": "Ce chart est optimal car:...",
       "config": {{
         "x_axis": "nom_colonne",
         "y_axis": "nom_colonne_numerique",
@@ -127,9 +128,9 @@ IMPORTANT: Réponds UNIQUEMENT avec un JSON valide, sans texte avant ou après, 
     }},
     {{
       "id": 2,
-      "type": "scatter",
+      "type": "",
       "title": "Autre titre descriptif",
-      "justification": "Le scatter plot est approprié pour: (1) visualiser la corrélation entre deux variables continues, (2) identifier des patterns ou outliers, (3) chaque point représente une observation réelle maximisant le data-ink ratio.",
+      "justification": "Le plot est approprié pour:",
       "config": {{
         "x_axis": "nom_colonne_numerique",
         "y_axis": "nom_colonne_numerique",
@@ -138,9 +139,9 @@ IMPORTANT: Réponds UNIQUEMENT avec un JSON valide, sans texte avant ou après, 
     }},
     {{
       "id": 3,
-      "type": "horizontalBar",
+      "type": "",
       "title": "Troisième titre",
-      "justification": "Le bar chart horizontal est préférable car: (1) les noms de catégories sont longs et plus lisibles horizontalement, (2) facilite la comparaison entre catégories, (3) l'ordre décroissant met en évidence le classement.",
+      "justification": "Le chart horizontal est préférable car: ...",
       "config": {{
         "x_axis": "nom_colonne_categorielle",
         "y_axis": "nom_colonne_numerique",
@@ -159,7 +160,7 @@ EXEMPLES DE CONFIGURATIONS SELON LE TYPE:
 2. Bar Chart pour MOYENNES:
    {{"type": "bar", "config": {{"x_axis": "bedrooms", "y_axis": "price", "aggregation": "mean"}}}}
 
-3. Pie Chart pour RÉPARTITION:
+3. Pie Chart pour REPARTITION:
    {{"type": "pie", "config": {{"category": "furnishingstatus"}}}}
 
 4. Horizontal Bar pour COMPARAISON:
@@ -170,6 +171,18 @@ EXEMPLES DE CONFIGURATIONS SELON LE TYPE:
 
 6. Correlation Matrix (pas de config nécessaire):
    {{"type": "correlationMatrix", "config": {{}}}}
+
+
+CONFIGURATION "limit" et "sort_by":
+- "limit": nombre maximum d'éléments à afficher (ex: 10 pour "top 10", 20 pour "top 20")
+- "sort_by": "value" (tri par valeur décroissante) ou "category" (tri alphabétique)
+
+MOTS-CLÉS À DÉTECTER DANS LA QUESTION:
+- "top 10", "top 5", "meilleurs", "premiers" → limit: 10 ou 5, sort_by: "value"
+- "pires", "derniers", "worst" → limit: N, sort_by: "value", order: "asc"
+- "classement", "ranking" → sort_by: "value"
+- "par ordre alphabétique" → sort_by: "category"
+   
 
 RÈGLES IMPORTANTES:
 - Pour BAR CHART avec comptage: SEULEMENT "x_axis" et "aggregation": "count"

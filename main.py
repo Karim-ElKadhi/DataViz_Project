@@ -4,8 +4,9 @@ import pandas as pd
 import json
 import os
 from utils.analyse import DataAnalyzer
-from utils.gemini import GeminiService
-
+from utils.prompt import GeminiService
+from dotenv import load_dotenv
+load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
@@ -15,7 +16,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Initialize services
 data_analyzer = DataAnalyzer()
-gemini_service = GeminiService(api_key=os.getenv('GEMINI_API_KEY'))
+gemini_service = GeminiService(api_key=os.getenv('GROQ_API_KEY'))
 
 # Store uploaded data in memory
 current_dataset = None
@@ -154,4 +155,5 @@ def health_check():
     return jsonify({'status': 'healthy'})
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get('PORT', 7860))
+    app.run(debug=False, host='0.0.0.0', port=port)

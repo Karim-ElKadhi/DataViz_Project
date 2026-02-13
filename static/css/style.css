@@ -212,6 +212,7 @@ body {
 
 .secondary-button:hover {
     background: #d1d5db;
+    transform: translateY(-2px);
 }
 
 .download-button {
@@ -223,6 +224,25 @@ body {
     background: #059669;
     transform: translateY(-2px);
     box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+}
+
+/* Button groups */
+.button-group {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+    flex-wrap: wrap;
+}
+
+.button-group .secondary-button {
+    flex: 1;
+    min-width: 200px;
+    justify-content: center;
+}
+
+.question-box .secondary-button {
+    width: 100%;
+    margin-top: 10px;
 }
 
 /* Loader */
@@ -273,28 +293,6 @@ body {
     color: #1f2937;
     font-size: 1.2rem;
     margin-bottom: 10px;
-}
-#rawResponseContent {
-    font-family: 'Courier New', monospace;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-}
-
-/* Add a copy button */
-.copy-raw-btn {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    padding: 5px 10px;
-    background: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.copy-raw-btn:hover {
-    background: #0056b3;
 }
 
 .proposal-type {

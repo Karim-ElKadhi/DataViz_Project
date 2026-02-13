@@ -53,6 +53,10 @@
                     <span class="icon">🚀</span>
                     Générer les visualisations
                 </button>
+                <button id="changeDatasetBtn" class="secondary-button">
+                    <span class="icon">📁</span>
+                    Utiliser un autre dataset
+                </button>
                 <div id="generateProgress" class="hidden">
                     <div class="loader"></div>
                     <p>Génération en cours avec Gemini AI...</p>
@@ -75,15 +79,6 @@
                     Télécharger PNG
                 </button>
             </div>
-            <div id="rawResponseSection" style="display: none; margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <h3 style="margin: 0;">🔍 Raw Gemini Response (Debug)</h3>
-        <button onclick="toggleRawResponse()" style="padding: 5px 15px; background: #333; color: white; border: none; border-radius: 4px; cursor: pointer;">
-            Hide
-        </button>
-    </div>
-    <pre id="rawResponseContent" style="background: white; padding: 15px; border-radius: 4px; overflow-x: auto; max-height: 400px; overflow-y: auto; font-size: 12px; line-height: 1.4;"></pre>
-</div>
             
             <div id="vizJustification" class="justification-box"></div>
             
@@ -91,11 +86,17 @@
                 <canvas id="chartCanvas"></canvas>
             </div>
             
-            <button id="newQuestionBtn" class="secondary-button">
-                Nouvelle question
-            </button>
+            <div class="button-group">
+                <button id="backToProposalsBtn" class="secondary-button">
+                    <span class="icon">◀</span>
+                    Retour aux propositions
+                </button>
+                <button id="newQuestionBtn" class="secondary-button">
+                    <span class="icon">❓</span>
+                    Nouvelle question
+                </button>
+            </div>
         </section>
-        
     </div>
 
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>

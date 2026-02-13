@@ -1,3 +1,4 @@
+// State management
 const state = {
     currentDataset: null,
     proposals: [],
@@ -19,11 +20,13 @@ const elements = {
     questionInput: document.getElementById('questionInput'),
     generateBtn: document.getElementById('generateBtn'),
     generateProgress: document.getElementById('generateProgress'),
+    changeDatasetBtn: document.getElementById('changeDatasetBtn'),
     proposalsList: document.getElementById('proposalsList'),
     vizTitle: document.getElementById('vizTitle'),
     vizJustification: document.getElementById('vizJustification'),
     chartCanvas: document.getElementById('chartCanvas'),
     downloadBtn: document.getElementById('downloadBtn'),
+    backToProposalsBtn: document.getElementById('backToProposalsBtn'),
     newQuestionBtn: document.getElementById('newQuestionBtn'),
     errorMessage: document.getElementById('errorMessage')
 };
@@ -34,7 +37,9 @@ const API_URL = '/api';
 // Event Listeners
 elements.fileInput.addEventListener('change', handleFileUpload);
 elements.generateBtn.addEventListener('click', handleGenerateVisualization);
+elements.changeDatasetBtn.addEventListener('click', goBackToUpload);
 elements.downloadBtn.addEventListener('click', downloadChart);
+elements.backToProposalsBtn.addEventListener('click', goBackToProposals);
 elements.newQuestionBtn.addEventListener('click', goBackToQuestion);
 
 // File Upload Handler
@@ -211,36 +216,56 @@ function createScatterChart(vizData) {
         type: 'scatter',
         data: {
             datasets: [{
-                label: vizData.data.x_label || 'Data',
+                label: state.selectedProposal.title,
                 data: vizData.data.data.map(d => ({ x: d.x, y: d.y })),
-                backgroundColor: 'rgba(102, 126, 234, 0.6)',
-                borderColor: 'rgba(102, 126, 234, 1)',
-                borderWidth: 2
+                backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                borderColor: 'rgba(59, 130, 246, 0.8)',
+                borderWidth: 1,
+                pointRadius: 4,
+                pointHoverRadius: 6
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: true },
+                legend: { display: false },  // Single dataset = no legend (reduce chartjunk)
                 title: {
                     display: true,
                     text: state.selectedProposal.title,
-                    font: { size: 18 }
+                    font: { size: 18, weight: 'bold', family: '-apple-system, sans-serif' },
+                    padding: { top: 10, bottom: 20 }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    displayColors: false
                 }
             },
             scales: {
                 x: {
                     title: {
                         display: true,
-                        text: vizData.x_label || 'X'
-                    }
+                        text: vizData.x_label || 'X',
+                        font: { size: 13, weight: '600' }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)',  // Minimal grid
+                        lineWidth: 1
+                    },
+                    ticks: { font: { size: 11 } }
                 },
                 y: {
                     title: {
                         display: true,
-                        text: vizData.y_label || 'Y'
-                    }
+                        text: vizData.y_label || 'Y',
+                        font: { size: 13, weight: '600' }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)',
+                        lineWidth: 1
+                    },
+                    ticks: { font: { size: 11 } }
                 }
             }
         }
@@ -249,14 +274,14 @@ function createScatterChart(vizData) {
 
 function createBarChart(vizData) {
     const colors = [
-        'rgba(102, 126, 234, 0.8)',
-        'rgba(16, 185, 129, 0.8)',
-        'rgba(245, 158, 11, 0.8)',
-        'rgba(239, 68, 68, 0.8)',
-        'rgba(139, 92, 246, 0.8)',
-        'rgba(236, 72, 153, 0.8)',
-        'rgba(14, 165, 233, 0.8)',
-        'rgba(234, 179, 8, 0.8)'
+        'rgba(59, 130, 246, 0.85)',   // Blue
+        'rgba(16, 185, 129, 0.85)',   // Green
+        'rgba(245, 158, 11, 0.85)',   // Orange
+        'rgba(239, 68, 68, 0.85)',    // Red
+        'rgba(139, 92, 246, 0.85)',   // Purple
+        'rgba(236, 72, 153, 0.85)',   // Pink
+        'rgba(14, 165, 233, 0.85)',   // Cyan
+        'rgba(234, 179, 8, 0.85)'     // Yellow
     ];
 
     return {
@@ -267,19 +292,33 @@ function createBarChart(vizData) {
                 label: vizData.y_label || 'Value',
                 data: vizData.data.data.map(d => d.value),
                 backgroundColor: vizData.data.data.map((_, i) => colors[i % colors.length]),
-                borderColor: vizData.data.data.map((_, i) => colors[i % colors.length].replace('0.8', '1')),
-                borderWidth: 2
+                borderColor: 'transparent', // No borders for cleaner look (Tufte principle)
+                borderWidth: 0
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: false },
+                legend: { 
+                    display: false  // Remove legend for single dataset (reduce chartjunk)
+                },
                 title: {
                     display: true,
                     text: state.selectedProposal.title,
-                    font: { size: 18, weight: 'bold' }
+                    font: { 
+                        size: 18, 
+                        weight: 'bold',
+                        family: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+                    },
+                    padding: { top: 10, bottom: 20 }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    titleFont: { size: 14, weight: 'bold' },
+                    bodyFont: { size: 13 },
+                    displayColors: false  // Remove color box (reduce chartjunk)
                 }
             },
             scales: {
@@ -287,16 +326,40 @@ function createBarChart(vizData) {
                     title: {
                         display: true,
                         text: vizData.x_label || 'Category',
-                        font: { size: 14, weight: 'bold' }
+                        font: { size: 13, weight: '600' },
+                        padding: { top: 10 }
+                    },
+                    grid: {
+                        display: false  // Remove vertical grid lines (Tufte: minimize non-data ink)
+                    },
+                    ticks: {
+                        font: { size: 11 },
+                        maxRotation: 45,
+                        minRotation: 0
                     }
                 },
                 y: {
                     title: {
                         display: true,
                         text: vizData.y_label || 'Value',
-                        font: { size: 14, weight: 'bold' }
+                        font: { size: 13, weight: '600' }
                     },
-                    beginAtZero: true
+                    beginAtZero: true,  // CRITICAL: Always start at 0 for bar charts (best practice)
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)',  // Subtle horizontal lines only
+                        lineWidth: 1
+                    },
+                    ticks: {
+                        font: { size: 11 }
+                    }
+                }
+            },
+            layout: {
+                padding: {
+                    top: 5,
+                    right: 20,
+                    bottom: 5,
+                    left: 10
                 }
             }
         }
@@ -700,89 +763,6 @@ function downloadChart() {
     link.href = elements.chartCanvas.toDataURL('image/png');
     link.click();
 }
-function toggleRawResponse() {
-    const section = document.getElementById('rawResponseSection');
-    const button = event.target;
-    
-    if (section.style.display === 'none') {
-        section.style.display = 'block';
-        button.textContent = 'Hide';
-    } else {
-        section.style.display = 'none';
-        button.textContent = 'Show Raw Response';
-    }
-}
-
-// Modify your existing generateVisualizations function to display raw response
-async function generateVisualizations() {
-    const question = document.getElementById('questionInput').value;
-    
-    if (!question.trim()) {
-        alert('Please enter a question');
-        return;
-    }
-    
-    try {
-        const response = await fetch('/api/generate-visualizations', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ question: question })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            // Display the raw response
-            if (data.raw_response) {
-                const rawSection = document.getElementById('rawResponseSection');
-                const rawContent = document.getElementById('rawResponseContent');
-                
-                rawContent.textContent = data.raw_response;
-                rawSection.style.display = 'block';
-            }
-            
-            // Display proposals (your existing code)
-            displayProposals(data.proposals);
-        } else {
-            alert('Error: ' + data.error);
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to generate visualizations');
-    }
-}
-
-// Alternative: Add a "Show Raw Response" button next to your generate button
-function addRawResponseButton() {
-    const buttonHTML = `
-        <button onclick="fetchRawResponse()" style="margin-left: 10px; padding: 10px 20px; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer;">
-            Show Raw Response
-        </button>
-    `;
-    // Insert this next to your generate visualizations button
-}
-
-async function fetchRawResponse() {
-    try {
-        const response = await fetch('/api/get-raw-response');
-        const data = await response.json();
-        
-        if (data.success) {
-            const rawSection = document.getElementById('rawResponseSection');
-            const rawContent = document.getElementById('rawResponseContent');
-            
-            rawContent.textContent = data.raw_response;
-            rawSection.style.display = 'block';
-        } else {
-            alert('No raw response available yet. Generate visualizations first.');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to fetch raw response');
-    }
-}
 
 // Navigation Functions
 function showSection(section) {
@@ -809,9 +789,61 @@ function showSection(section) {
     }
 }
 
-function goBackToQuestion() {
-    showSection('question');
+function goBackToUpload() {
+    // Reset file input
+    elements.fileInput.value = '';
+    elements.uploadInfo.textContent = 'Aucun fichier sélectionné';
+    
+    // Clear state
+    state.currentDataset = null;
+    state.proposals = [];
+    state.selectedProposal = null;
+    state.vizData = null;
+    
+    // Clear question
     elements.questionInput.value = '';
+    
+    // Destroy chart if exists
+    if (state.currentChart) {
+        state.currentChart.destroy();
+        state.currentChart = null;
+    }
+    
+    showSection('upload');
+    hideError();
+}
+
+function goBackToProposals() {
+    // Keep proposals but destroy current chart
+    if (state.currentChart) {
+        state.currentChart.destroy();
+        state.currentChart = null;
+    }
+    
+    state.selectedProposal = null;
+    state.vizData = null;
+    
+    showSection('proposals');
+    hideError();
+}
+
+function goBackToQuestion() {
+    // Keep dataset but clear proposals
+    state.proposals = [];
+    state.selectedProposal = null;
+    state.vizData = null;
+    
+    // Destroy chart if exists
+    if (state.currentChart) {
+        state.currentChart.destroy();
+        state.currentChart = null;
+    }
+    
+    // Clear question input
+    elements.questionInput.value = '';
+    
+    showSection('question');
+    hideError();
 }
 
 // Error Handling
