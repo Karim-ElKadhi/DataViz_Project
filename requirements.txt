@@ -1,6 +1,5 @@
 flask==3.0.0
 flask-cors==4.0.0
 pandas==2.1.4
-numpy==1.26.2
 google-generativeai==0.3.2
 python-dotenv==1.0.0
