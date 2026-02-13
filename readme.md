@@ -1,13 +1,10 @@
 ---
-title: Intelligent Data Visualization
-emoji: 📊
-colorFrom: blue
-colorTo: purple
+title: Basic Docker SDK Space
+emoji: 🐳
+colorFrom: purple
+colorTo: gray
 sdk: docker
-sdk_version: "latest"
-python_version: "3.10"
-app_file: app.py
-pinned: false
+app_port: 7860
 ---
 
 # 📊 Intelligent Data Visualization System
