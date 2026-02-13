@@ -4,8 +4,9 @@ emoji: 📊
 colorFrom: blue
 colorTo: purple
 sdk: docker
+sdk_version: "latest"
+app_file: app.py
 pinned: false
-license: mit
 ---
 
 # 📊 Intelligent Data Visualization System
