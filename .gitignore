@@ -1,0 +1,19 @@
+project/
+*.env
+__pycache__/
+*.pyc
+.test
+/test
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+data/*.csv
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+# VS Code
+.vscode/
