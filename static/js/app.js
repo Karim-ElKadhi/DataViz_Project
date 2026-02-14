@@ -42,6 +42,7 @@ elements.downloadBtn.addEventListener('click', downloadChart);
 elements.backToProposalsBtn.addEventListener('click', goBackToProposals);
 elements.newQuestionBtn.addEventListener('click', goBackToQuestion);
 
+
 // File Upload Handler
 async function handleFileUpload(event) {
     const file = event.target.files[0];
@@ -276,11 +277,13 @@ function createBarChart(vizData) {
     const colors = [
         'rgba(59, 130, 246, 0.85)',   // Blue
         'rgba(16, 185, 129, 0.85)',   // Green
-        'rgba(245, 158, 11, 0.85)',   // Orange
+        'rgba(166, 166, 166, 0.85)',   // grey
         'rgba(239, 68, 68, 0.85)',    // Red
         'rgba(139, 92, 246, 0.85)',   // Purple
-        'rgba(236, 72, 153, 0.85)',   // Pink
+        'rgba(250, 158, 204, 0.85)',   // Pink
         'rgba(14, 165, 233, 0.85)',   // Cyan
+        'rgba(0, 0, 0, 0.85)',   // black
+        'rgba(255, 115, 0, 0.85)',     // orange
         'rgba(234, 179, 8, 0.85)'     // Yellow
     ];
 
@@ -344,7 +347,7 @@ function createBarChart(vizData) {
                         text: vizData.y_label || 'Value',
                         font: { size: 13, weight: '600' }
                     },
-                    beginAtZero: true,  // CRITICAL: Always start at 0 for bar charts (best practice)
+                    beginAtZero: true,  // Always start at 0 for bar charts (best practice)
                     grid: {
                         color: 'rgba(0, 0, 0, 0.05)',  // Subtle horizontal lines only
                         lineWidth: 1
@@ -368,12 +371,16 @@ function createBarChart(vizData) {
 
 function createHorizontalBarChart(vizData) {
     const colors = [
-        'rgba(102, 126, 234, 0.8)',
-        'rgba(16, 185, 129, 0.8)',
-        'rgba(245, 158, 11, 0.8)',
-        'rgba(239, 68, 68, 0.8)',
-        'rgba(139, 92, 246, 0.8)',
-        'rgba(236, 72, 153, 0.8)'
+        'rgba(59, 130, 246, 0.85)',   // Blue
+        'rgba(16, 185, 129, 0.85)',   // Green
+        'rgba(166, 166, 166, 0.85)',   // grey
+        'rgba(239, 68, 68, 0.85)',    // Red
+        'rgba(139, 92, 246, 0.85)',   // Purple
+        'rgba(250, 158, 204, 0.85)',   // Pink
+        'rgba(14, 165, 233, 0.85)',   // Cyan
+        'rgba(0, 0, 0, 0.85)',   // black
+        'rgba(255, 115, 0, 0.85)',     // orange
+        'rgba(234, 179, 8, 0.85)'     // Yellow
     ];
 
     return {
@@ -389,7 +396,7 @@ function createHorizontalBarChart(vizData) {
             }]
         },
         options: {
-            indexAxis: 'y', // This makes it horizontal
+            indexAxis: 'y',
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
@@ -423,16 +430,16 @@ function createHorizontalBarChart(vizData) {
 
 function createPieChart(vizData) {
     const colors = [
-        'rgba(102, 126, 234, 0.8)',
-        'rgba(16, 185, 129, 0.8)',
-        'rgba(245, 158, 11, 0.8)',
-        'rgba(239, 68, 68, 0.8)',
-        'rgba(139, 92, 246, 0.8)',
-        'rgba(236, 72, 153, 0.8)',
-        'rgba(14, 165, 233, 0.8)',
-        'rgba(234, 179, 8, 0.8)',
-        'rgba(251, 146, 60, 0.8)',
-        'rgba(20, 184, 166, 0.8)'
+        'rgba(59, 130, 246, 0.85)',   // Blue
+        'rgba(16, 185, 129, 0.85)',   // Green
+        'rgba(166, 166, 166, 0.85)',   // grey
+        'rgba(239, 68, 68, 0.85)',    // Red
+        'rgba(139, 92, 246, 0.85)',   // Purple
+        'rgba(250, 158, 204, 0.85)',   // Pink
+        'rgba(14, 165, 233, 0.85)',   // Cyan
+        'rgba(0, 0, 0, 0.85)',   // black
+        'rgba(255, 115, 0, 0.85)',     // orange
+        'rgba(234, 179, 8, 0.85)'     // Yellow
     ];
 
     return {
@@ -479,7 +486,6 @@ function createPieChart(vizData) {
 }
 
 function createBoxChart(vizData) {
-    // Box plot as bar chart showing medians
     return {
         type: 'bar',
         data: {
@@ -571,101 +577,10 @@ function createLineChart(vizData) {
         }
     };
 }
-
-function createHeatmapChart(vizData) {
-    // For true heatmap, we need Chart.js Matrix plugin
-    // Using a bubble chart as alternative visualization
-    const data = vizData.data.data;
-    
-    // Get unique x and y values
-    const xValues = [...new Set(data.map(d => d.x))];
-    const yValues = [...new Set(data.map(d => d.y))];
-    
-    // Create bubble data
-    const bubbleData = data.map(d => ({
-        x: xValues.indexOf(d.x),
-        y: yValues.indexOf(d.y),
-        r: Math.abs(d.value) * 20, // Scale bubble size by correlation value
-        value: d.value,
-        xLabel: d.x,
-        yLabel: d.y
-    }));
-
-    // Color based on correlation value
-    const getColor = (value) => {
-        if (value > 0.7) return 'rgba(16, 185, 129, 0.8)'; // Strong positive - green
-        if (value > 0.3) return 'rgba(102, 126, 234, 0.6)'; // Moderate positive - blue
-        if (value > -0.3) return 'rgba(156, 163, 175, 0.6)'; // Weak - gray
-        if (value > -0.7) return 'rgba(245, 158, 11, 0.6)'; // Moderate negative - orange
-        return 'rgba(239, 68, 68, 0.8)'; // Strong negative - red
-    };
-
-    return {
-        type: 'bubble',
-        data: {
-            datasets: [{
-                label: 'Correlation',
-                data: bubbleData,
-                backgroundColor: bubbleData.map(d => getColor(d.value)),
-                borderColor: bubbleData.map(d => getColor(d.value).replace('0.8', '1')),
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                title: {
-                    display: true,
-                    text: state.selectedProposal.title,
-                    font: { size: 18, weight: 'bold' }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const point = context.raw;
-                            return `${point.xLabel} vs ${point.yLabel}: ${point.value.toFixed(3)}`;
-                        }
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    title: {
-                        display: true,
-                        text: vizData.x_label || 'Variables',
-                        font: { size: 14, weight: 'bold' }
-                    },
-                    ticks: {
-                        callback: function(value) {
-                            return xValues[value] || '';
-                        }
-                    }
-                },
-                y: {
-                    title: {
-                        display: true,
-                        text: vizData.y_label || 'Variables',
-                        font: { size: 14, weight: 'bold' }
-                    },
-                    ticks: {
-                        callback: function(value) {
-                            return yValues[value] || '';
-                        }
-                    }
-                }
-            }
-        }
-    };
-}
-
 function createCorrelationMatrixChart(vizData) {
-    // Create a proper correlation matrix visualization
     const variables = vizData.x_labels || vizData.variables;
     const flatData = vizData.data.flat();
     
-    // Create matrix-style bubble chart
     const bubbleData = flatData.map(d => ({
         x: d.x,
         y: d.y,
@@ -675,7 +590,6 @@ function createCorrelationMatrixChart(vizData) {
         yLabel: d.yLabel
     }));
 
-    // Color gradient from red (negative) to white (0) to green (positive)
     const getColor = (value) => {
         if (value >= 0.8) return 'rgba(5, 150, 105, 0.9)'; // Dark green
         if (value >= 0.5) return 'rgba(16, 185, 129, 0.8)'; // Green
@@ -862,6 +776,3 @@ function hideError() {
 function showSuccess(message) {
     elements.datasetInfo.textContent = message;
 }
-
-// Initialize
-console.log('Application de visualisation intelligente chargée ✓');
