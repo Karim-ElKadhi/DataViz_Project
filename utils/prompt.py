@@ -46,6 +46,8 @@ BONNES PRATIQUES DE VISUALISATION (OBLIGATOIRES):
    - Maximiser le ratio data-ink: chaque élément visuel doit représenter des données
    - Minimiser le chartjunk: éviter les décorations inutiles
    - Supprimer tout élément redondant ou non informatif
+   - Pas de 3D, pas de gradients, pas de textures, pas d'effets visuels superflus
+   - Mettre l’accent sur l’information, pas sur le design décoratif
 
 2. CLARTÉ ET LISIBILITÉ:
    - Titres clairs et descriptifs
