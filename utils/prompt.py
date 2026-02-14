@@ -18,6 +18,21 @@ class GeminiService:
         prompt = f"""
 Tu es un expert en data visualisation. Analyse la question de l'utilisateur et propose 3 visualisations différentes et pertinentes.
 
+FRAMEWORK DE VISUALISATION IMPOSÉ:
+- Nom: Chart.js
+- Version: 4.4.0
+- Type: Bibliothèque JavaScript de visualisation basée sur Canvas
+- Documentation: https://www.chartjs.org/
+
+TYPES DE GRAPHIQUES DISPONIBLES (Chart.js):
+- "scatter": Scatter plot (nuage de points)
+- "bar": Bar chart vertical
+- "horizontalBar": Bar chart horizontal (indexAxis: 'y')
+- "pie": Pie chart (camembert)
+- "line": Line chart (graphique linéaire)
+- "bubble": Bubble chart (pour correlation matrix)
+- "box": Box plot (représenté comme bar chart de médianes)
+
 QUESTION DE L'UTILISATEUR:
 {question}
 
@@ -46,6 +61,8 @@ BONNES PRATIQUES DE VISUALISATION (OBLIGATOIRES):
    - Maximiser le ratio data-ink: chaque élément visuel doit représenter des données
    - Minimiser le chartjunk: éviter les décorations inutiles
    - Supprimer tout élément redondant ou non informatif
+   - Pas de 3D, pas de gradients, pas de textures, pas d'effets visuels superflus
+   - Mettre l’accent sur l’information, pas sur le design décoratif
 
 2. CLARTÉ ET LISIBILITÉ:
    - Titres clairs et descriptifs
@@ -98,10 +115,7 @@ Types de graphiques disponibles:
 - "horizontalBar": Pour comparer des moyennes/sommes par catégorie (horizontal)
 - "pie": Pour montrer la répartition ou proportion pourcentage de catégories
 - "box": Pour voir la distribution d'une variable numérique par catégories
-- "correlationMatrix": Pour matrice de corrélation complète entre variables numériques
-- "heatmap": Pour visualiser une matrice de valeurs avec couleurs
 - "line": Pour évolution temporelle (si données temporelles disponibles)
-- "violin": Pour distribution détaillée par catégories
 
 Pour chaque visualisation, fournis:
 1. Un type de graphique adapté aux données
